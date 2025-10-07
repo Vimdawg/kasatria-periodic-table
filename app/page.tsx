@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 
 declare global {
@@ -19,7 +19,7 @@ export default function LoginPage() {
   const [isAuthenticated, setIsAuthenticated] = useState(false)
   const router = useRouter()
 
-  const initializeGoogleSignIn = () => {
+  const initializeGoogleSignIn = useCallback(() => {
     if (!window.google) return
 
     const clientId = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID
@@ -48,7 +48,7 @@ export default function LoginPage() {
     )
 
     setIsLoading(false)
-  }
+  }, [])
 
   useEffect(() => {
     // Check if user is already authenticated

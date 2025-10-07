@@ -36,44 +36,6 @@ export default function SceneClient({ data, error }: SceneClientProps) {
   const [currentLayout, setCurrentLayout] = useState<LayoutType>('table')
   const [isLoading, setIsLoading] = useState(true)
 
-  useEffect(() => {
-    // Check authentication
-    const authState = localStorage.getItem('googleAuth')
-    if (!authState) {
-      router.push('/')
-      return
-    }
-    setIsAuthenticated(true)
-
-    if (error) {
-      console.error('Scene error:', error)
-      setIsLoading(false)
-      return
-    }
-
-    if (data.length === 0) {
-      setIsLoading(false)
-      return
-    }
-
-    initializeScene()
-    createObjects(data)
-    animate()
-
-    return () => {
-      if (rendererRef.current) {
-        // CSS3DRenderer doesn't have dispose method, just clear the DOM
-        const container = containerRef.current
-        if (container && rendererRef.current.domElement) {
-          container.removeChild(rendererRef.current.domElement)
-        }
-      }
-      if (controlsRef.current) {
-        controlsRef.current.dispose()
-      }
-    }
-  }, [data, error, router, initializeScene, createObjects, animate])
-
   const initializeScene = useCallback(() => {
     if (!containerRef.current) return
 
@@ -219,6 +181,44 @@ export default function SceneClient({ data, error }: SceneClientProps) {
       rendererRef.current.render(sceneRef.current, cameraRef.current)
     }
   }, [])
+
+  useEffect(() => {
+    // Check authentication
+    const authState = localStorage.getItem('googleAuth')
+    if (!authState) {
+      router.push('/')
+      return
+    }
+    setIsAuthenticated(true)
+
+    if (error) {
+      console.error('Scene error:', error)
+      setIsLoading(false)
+      return
+    }
+
+    if (data.length === 0) {
+      setIsLoading(false)
+      return
+    }
+
+    initializeScene()
+    createObjects(data)
+    animate()
+
+    return () => {
+      if (rendererRef.current) {
+        // CSS3DRenderer doesn't have dispose method, just clear the DOM
+        const container = containerRef.current
+        if (container && rendererRef.current.domElement) {
+          container.removeChild(rendererRef.current.domElement)
+        }
+      }
+      if (controlsRef.current) {
+        controlsRef.current.dispose()
+      }
+    }
+  }, [data, error, router, initializeScene, createObjects, animate])
 
   const handleLayoutChange = (layout: LayoutType) => {
     if (!data.length) return
