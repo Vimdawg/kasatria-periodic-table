@@ -17,12 +17,17 @@ interface GoogleUser {
 export default function LoginPage() {
   const [isLoading, setIsLoading] = useState(true)
   const [isAuthenticated, setIsAuthenticated] = useState(false)
+  const [hasRedirected, setHasRedirected] = useState(false)
   const router = useRouter()
 
   const initializeGoogleSignIn = useCallback(() => {
-    if (!window.google) return
+    if (!window.google) {
+      console.log('Google Identity Services not loaded yet')
+      return
+    }
 
     const clientId = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID
+    console.log('Google Client ID:', clientId)
     if (!clientId) {
       console.error('Google Client ID not found')
       setIsLoading(false)
@@ -51,26 +56,38 @@ export default function LoginPage() {
   }, [])
 
   useEffect(() => {
+    console.log('LoginPage useEffect running...')
+    
     // Check if user is already authenticated
     const authState = localStorage.getItem('googleAuth')
     if (authState) {
+      console.log('User already authenticated, redirecting to scene...')
       setIsAuthenticated(true)
+      setHasRedirected(true)
       router.push('/scene')
       return
     }
 
     // Load Google Identity Services
+    console.log('Loading Google Identity Services script...')
     const script = document.createElement('script')
     script.src = 'https://accounts.google.com/gsi/client'
     script.async = true
     script.defer = true
     script.onload = () => {
+      console.log('Google Identity Services script loaded successfully')
       initializeGoogleSignIn()
+    }
+    script.onerror = () => {
+      console.error('Failed to load Google Identity Services script')
+      setIsLoading(false)
     }
     document.head.appendChild(script)
 
     return () => {
-      document.head.removeChild(script)
+      if (document.head.contains(script)) {
+        document.head.removeChild(script)
+      }
     }
   }, [router, initializeGoogleSignIn])
 

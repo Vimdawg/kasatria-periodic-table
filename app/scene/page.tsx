@@ -1,17 +1,16 @@
-import { fetchCsvData, PersonData } from '@/lib/fetchCsv'
+import { PersonData, fetchCsvData } from '@/lib/fetchCsv'
 import SceneClient from './SceneClient'
 
 export default async function ScenePage() {
-  let data: PersonData[] = []
-  let error: string | null = null
-
+  console.log('ScenePage: Starting to fetch CSV data...')
+  
   try {
-    data = await fetchCsvData()
-  } catch (err) {
-    error = err instanceof Error ? err.message : 'Failed to load data'
-    console.error('Error in ScenePage:', err)
+    const data = await fetchCsvData()
+    console.log('ScenePage: Successfully fetched', data.length, 'items')
+    return <SceneClient data={data} error={null} />
+  } catch (error) {
+    console.error('ScenePage: Error fetching CSV data:', error)
+    return <SceneClient data={[]} error={error instanceof Error ? error.message : 'Failed to fetch data'} />
   }
-
-  return <SceneClient data={data} error={error} />
 }
 

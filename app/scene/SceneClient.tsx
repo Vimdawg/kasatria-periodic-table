@@ -35,13 +35,20 @@ export default function SceneClient({ data, error }: SceneClientProps) {
   const [isAuthenticated, setIsAuthenticated] = useState(false)
   const [currentLayout, setCurrentLayout] = useState<LayoutType>('table')
   const [isLoading, setIsLoading] = useState(true)
+  const [isInitialized, setIsInitialized] = useState(false)
 
   const initializeScene = useCallback(() => {
-    if (!containerRef.current) return
+    console.log('initializeScene: Starting...')
+    if (!containerRef.current) {
+      console.log('initializeScene: No container ref, aborting')
+      return
+    }
+    console.log('initializeScene: Container found, creating scene...')
 
     // Scene
     const scene = new THREE.Scene()
     sceneRef.current = scene
+    console.log('initializeScene: Scene created')
 
     // Camera
     const camera = new THREE.PerspectiveCamera(
@@ -58,8 +65,10 @@ export default function SceneClient({ data, error }: SceneClientProps) {
     renderer.setSize(window.innerWidth, window.innerHeight)
     renderer.domElement.style.position = 'absolute'
     renderer.domElement.style.top = '0'
+    console.log('initializeScene: Adding renderer to container...')
     containerRef.current.appendChild(renderer.domElement)
     rendererRef.current = renderer
+    console.log('initializeScene: Renderer added to DOM')
 
     // Controls
     const controls = new OrbitControls(camera, renderer.domElement)
@@ -81,17 +90,23 @@ export default function SceneClient({ data, error }: SceneClientProps) {
 
     window.addEventListener('resize', handleResize)
 
+    console.log('initializeScene: Complete!')
     setIsLoading(false)
   }, [])
 
   const createObjects = useCallback((personData: PersonData[]) => {
-    if (!sceneRef.current) return
+    console.log('createObjects: Starting with', personData.length, 'items')
+    if (!sceneRef.current) {
+      console.log('createObjects: No scene ref, aborting')
+      return
+    }
 
     // Clear existing objects
     objectsRef.current.forEach(obj => {
       sceneRef.current?.remove(obj)
     })
     objectsRef.current = []
+    console.log('createObjects: Cleared existing objects')
 
     personData.forEach((person, index) => {
       const element = createElement(person, index)
@@ -100,6 +115,7 @@ export default function SceneClient({ data, error }: SceneClientProps) {
       sceneRef.current?.add(object)
       objectsRef.current.push(object)
     })
+    console.log('createObjects: Created', objectsRef.current.length, 'objects')
   }, [])
 
   const createElement = (person: PersonData, index: number) => {
@@ -124,9 +140,14 @@ export default function SceneClient({ data, error }: SceneClientProps) {
       maximumFractionDigits: 0
     }).format(person.netWorth)
 
+    // Get image URL from Photo field
+    const imageUrl = person.photo || person.image || person.picture || person.avatar || ''
+    
     element.innerHTML = `
       <div class="number">${person.rank}</div>
-      <div class="symbol">${person.name.charAt(0).toUpperCase()}</div>
+      <div class="symbol">
+        ${imageUrl ? `<img src="${imageUrl}" alt="${person.name}" class="person-photo" />` : person.name.charAt(0).toUpperCase()}
+      </div>
       <div class="details">
         <div class="name">${person.name}</div>
         <div class="company">${person.company}</div>
@@ -182,13 +203,55 @@ export default function SceneClient({ data, error }: SceneClientProps) {
     }
   }, [])
 
+  // Start animation loop
   useEffect(() => {
+    console.log('Starting animation loop...')
+    animate()
+  }, [animate])
+
+  // Fallback timeout to clear loading state
+  useEffect(() => {
+    const timeout = setTimeout(() => {
+      if (isLoading) {
+        console.log('Fallback timeout: forcing loading to false')
+        setIsLoading(false)
+      }
+    }, 5000) // 5 second timeout
+
+    return () => clearTimeout(timeout)
+  }, [isLoading])
+
+  // Initialize scene after component mounts
+  useEffect(() => {
+    console.log('Component mounted, checking if ready to initialize...')
+    console.log('isAuthenticated:', isAuthenticated, 'data.length:', data.length, 'isInitialized:', isInitialized, 'containerRef.current:', !!containerRef.current)
+    
+    if (isAuthenticated && data.length > 0 && !isInitialized) {
+      console.log('Forcing scene initialization...')
+      setIsInitialized(true)
+      setIsLoading(false)
+      
+      // Try to initialize scene with a small delay
+      setTimeout(() => {
+        console.log('Attempting to initialize scene...')
+        initializeScene()
+        createObjects(data)
+      }, 100)
+    }
+  }, [isAuthenticated, data.length, isInitialized, initializeScene, createObjects])
+
+  useEffect(() => {
+    console.log('SceneClient useEffect running...')
+    
     // Check authentication
     const authState = localStorage.getItem('googleAuth')
+    console.log('Auth state:', authState)
     if (!authState) {
+      console.log('No auth state, redirecting to login...')
       router.push('/')
       return
     }
+    console.log('Auth found, setting authenticated...')
     setIsAuthenticated(true)
 
     if (error) {
@@ -198,13 +261,12 @@ export default function SceneClient({ data, error }: SceneClientProps) {
     }
 
     if (data.length === 0) {
+      console.log('No data available, setting loading to false')
       setIsLoading(false)
       return
     }
 
-    initializeScene()
-    createObjects(data)
-    animate()
+    console.log('Data available, scene will be initialized by separate useEffect')
 
     return () => {
       if (rendererRef.current) {
@@ -218,7 +280,7 @@ export default function SceneClient({ data, error }: SceneClientProps) {
         controlsRef.current.dispose()
       }
     }
-  }, [data, error, router, initializeScene, createObjects, animate])
+  }, [data, error, router])
 
   const handleLayoutChange = (layout: LayoutType) => {
     if (!data.length) return
@@ -268,6 +330,7 @@ export default function SceneClient({ data, error }: SceneClientProps) {
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-white mx-auto mb-4"></div>
           <p className="text-white text-lg">Loading 3D Scene...</p>
+          <p className="text-gray-400 text-sm mt-2">Container ready: {containerRef.current ? 'Yes' : 'No'}</p>
         </div>
       </div>
     )

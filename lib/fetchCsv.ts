@@ -6,7 +6,11 @@ export interface PersonData {
   rank: number
   company: string
   country: string
-  [key: string]: string | number
+  image?: string
+  photo?: string
+  picture?: string
+  avatar?: string
+  [key: string]: string | number | undefined
 }
 
 // Convert header to camelCase
@@ -32,10 +36,12 @@ export async function fetchCsvData(): Promise<PersonData[]> {
   const csvUrl = process.env.NEXT_PUBLIC_CSV_URL || 
     'https://docs.google.com/spreadsheets/d/e/2PACX-1vSYQFf5uPRx3VOAoT2irE6Kw8LjXQse_QHHKMcyiy6qiwK07q_1JFwlNcAhkWShAoL74NurBBrQbhHR/pub?gid=8699197&single=true&output=csv'
 
+  console.log('fetchCsvData: Fetching from URL:', csvUrl)
   try {
     const response = await fetch(csvUrl, {
       next: { revalidate: 3600 } // Cache for 1 hour
     })
+    console.log('fetchCsvData: Response status:', response.status)
 
     if (!response.ok) {
       throw new Error(`Failed to fetch CSV: ${response.status} ${response.statusText}`)
@@ -49,6 +55,12 @@ export async function fetchCsvData(): Promise<PersonData[]> {
       skip_empty_lines: true,
       trim: true
     })
+
+    // Debug: Log the first record to see available fields
+    if (records.length > 0) {
+      console.log('fetchCsvData: First record keys:', Object.keys(records[0]))
+      console.log('fetchCsvData: First record sample:', records[0])
+    }
 
     // Transform data to camelCase headers and proper types
     const transformedData: PersonData[] = records.map((record: any, index: number) => {
