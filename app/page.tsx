@@ -19,30 +19,6 @@ export default function LoginPage() {
   const [isAuthenticated, setIsAuthenticated] = useState(false)
   const router = useRouter()
 
-  useEffect(() => {
-    // Check if user is already authenticated
-    const authState = localStorage.getItem('googleAuth')
-    if (authState) {
-      setIsAuthenticated(true)
-      router.push('/scene')
-      return
-    }
-
-    // Load Google Identity Services
-    const script = document.createElement('script')
-    script.src = 'https://accounts.google.com/gsi/client'
-    script.async = true
-    script.defer = true
-    script.onload = () => {
-      initializeGoogleSignIn()
-    }
-    document.head.appendChild(script)
-
-    return () => {
-      document.head.removeChild(script)
-    }
-  }, [router])
-
   const initializeGoogleSignIn = () => {
     if (!window.google) return
 
@@ -73,6 +49,30 @@ export default function LoginPage() {
 
     setIsLoading(false)
   }
+
+  useEffect(() => {
+    // Check if user is already authenticated
+    const authState = localStorage.getItem('googleAuth')
+    if (authState) {
+      setIsAuthenticated(true)
+      router.push('/scene')
+      return
+    }
+
+    // Load Google Identity Services
+    const script = document.createElement('script')
+    script.src = 'https://accounts.google.com/gsi/client'
+    script.async = true
+    script.defer = true
+    script.onload = () => {
+      initializeGoogleSignIn()
+    }
+    document.head.appendChild(script)
+
+    return () => {
+      document.head.removeChild(script)
+    }
+  }, [router, initializeGoogleSignIn])
 
   const handleCredentialResponse = (response: GoogleUser) => {
     try {

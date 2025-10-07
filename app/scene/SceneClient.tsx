@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useRef, useState, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import * as THREE from 'three'
 import { CSS3DRenderer, CSS3DObject } from 'three/examples/jsm/renderers/CSS3DRenderer.js'
@@ -62,15 +62,19 @@ export default function SceneClient({ data, error }: SceneClientProps) {
 
     return () => {
       if (rendererRef.current) {
-        rendererRef.current.dispose()
+        // CSS3DRenderer doesn't have dispose method, just clear the DOM
+        const container = containerRef.current
+        if (container && rendererRef.current.domElement) {
+          container.removeChild(rendererRef.current.domElement)
+        }
       }
       if (controlsRef.current) {
         controlsRef.current.dispose()
       }
     }
-  }, [data, error, router])
+  }, [data, error, router, initializeScene, createObjects, animate])
 
-  const initializeScene = () => {
+  const initializeScene = useCallback(() => {
     if (!containerRef.current) return
 
     // Scene
@@ -116,9 +120,9 @@ export default function SceneClient({ data, error }: SceneClientProps) {
     window.addEventListener('resize', handleResize)
 
     setIsLoading(false)
-  }
+  }, [])
 
-  const createObjects = (personData: PersonData[]) => {
+  const createObjects = useCallback((personData: PersonData[]) => {
     if (!sceneRef.current) return
 
     // Clear existing objects
@@ -134,7 +138,7 @@ export default function SceneClient({ data, error }: SceneClientProps) {
       sceneRef.current?.add(object)
       objectsRef.current.push(object)
     })
-  }
+  }, [])
 
   const createElement = (person: PersonData, index: number) => {
     const element = document.createElement('div')
@@ -204,7 +208,7 @@ export default function SceneClient({ data, error }: SceneClientProps) {
     rendererRef.current.setSize(window.innerWidth, window.innerHeight)
   }
 
-  const animate = () => {
+  const animate = useCallback(() => {
     requestAnimationFrame(animate)
     
     if (controlsRef.current) {
@@ -214,7 +218,7 @@ export default function SceneClient({ data, error }: SceneClientProps) {
     if (rendererRef.current && sceneRef.current && cameraRef.current) {
       rendererRef.current.render(sceneRef.current, cameraRef.current)
     }
-  }
+  }, [])
 
   const handleLayoutChange = (layout: LayoutType) => {
     if (!data.length) return
