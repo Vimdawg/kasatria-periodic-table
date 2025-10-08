@@ -62,20 +62,28 @@ export default function LoginPage() {
       cancel_on_tap_outside: false
     })
 
-    const buttonElement = document.getElementById('google-signin-button')
-    if (buttonElement) {
-      // Clear any existing button content
-      buttonElement.innerHTML = ''
-      window.google.accounts.id.renderButton(buttonElement, {
-        theme: 'outline',
-        size: 'large',
-        width: 300,
-        text: 'signin_with',
-        shape: 'rectangular'
-      })
-    } else {
-      console.error('Google sign-in button element not found')
+    // Wait for the button element to be available
+    const checkForButton = () => {
+      const buttonElement = document.getElementById('google-signin-button')
+      if (buttonElement) {
+        // Clear any existing button content
+        buttonElement.innerHTML = ''
+        window.google.accounts.id.renderButton(buttonElement, {
+          theme: 'outline',
+          size: 'large',
+          width: 300,
+          text: 'signin_with',
+          shape: 'rectangular'
+        })
+        console.log('Google sign-in button rendered successfully')
+      } else {
+        console.log('Google sign-in button element not found, retrying...')
+        // Retry after a short delay
+        setTimeout(checkForButton, 100)
+      }
     }
+    
+    checkForButton()
 
     setIsLoading(false)
   }, [handleCredentialResponse])
@@ -101,10 +109,19 @@ export default function LoginPage() {
     script.defer = true
     script.onload = () => {
       console.log('Google Identity Services script loaded successfully')
-      // Small delay to ensure DOM is ready
-      setTimeout(() => {
-        initializeGoogleSignIn()
-      }, 100)
+      // Wait for DOM to be fully ready
+      if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', () => {
+          setTimeout(() => {
+            initializeGoogleSignIn()
+          }, 200)
+        })
+      } else {
+        // DOM is already ready
+        setTimeout(() => {
+          initializeGoogleSignIn()
+        }, 200)
+      }
     }
     script.onerror = () => {
       console.error('Failed to load Google Identity Services script')
