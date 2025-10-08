@@ -20,6 +20,27 @@ export default function LoginPage() {
   const [hasRedirected, setHasRedirected] = useState(false)
   const router = useRouter()
 
+  const handleCredentialResponse = useCallback((response: GoogleUser) => {
+    try {
+      // Decode the JWT token to get user info
+      const payload = JSON.parse(atob(response.credential.split('.')[1]))
+      
+      const userProfile = {
+        name: payload.name,
+        email: payload.email,
+        picture: payload.picture,
+        credential: response.credential
+      }
+
+      // Store auth state in localStorage
+      localStorage.setItem('googleAuth', JSON.stringify(userProfile))
+      setIsAuthenticated(true)
+      router.push('/scene')
+    } catch (error) {
+      console.error('Error processing Google sign-in:', error)
+    }
+  }, [router])
+
   const initializeGoogleSignIn = useCallback(() => {
     if (!window.google) {
       console.log('Google Identity Services not loaded yet')
@@ -41,19 +62,23 @@ export default function LoginPage() {
       cancel_on_tap_outside: false
     })
 
-    window.google.accounts.id.renderButton(
-      document.getElementById('google-signin-button'),
-      {
+    const buttonElement = document.getElementById('google-signin-button')
+    if (buttonElement) {
+      // Clear any existing button content
+      buttonElement.innerHTML = ''
+      window.google.accounts.id.renderButton(buttonElement, {
         theme: 'outline',
         size: 'large',
         width: 300,
         text: 'signin_with',
         shape: 'rectangular'
-      }
-    )
+      })
+    } else {
+      console.error('Google sign-in button element not found')
+    }
 
     setIsLoading(false)
-  }, [])
+  }, [handleCredentialResponse])
 
   useEffect(() => {
     console.log('LoginPage useEffect running...')
@@ -76,7 +101,10 @@ export default function LoginPage() {
     script.defer = true
     script.onload = () => {
       console.log('Google Identity Services script loaded successfully')
-      initializeGoogleSignIn()
+      // Small delay to ensure DOM is ready
+      setTimeout(() => {
+        initializeGoogleSignIn()
+      }, 100)
     }
     script.onerror = () => {
       console.error('Failed to load Google Identity Services script')
@@ -89,28 +117,7 @@ export default function LoginPage() {
         document.head.removeChild(script)
       }
     }
-  }, [router, initializeGoogleSignIn])
-
-  const handleCredentialResponse = (response: GoogleUser) => {
-    try {
-      // Decode the JWT token to get user info
-      const payload = JSON.parse(atob(response.credential.split('.')[1]))
-      
-      const userProfile = {
-        name: payload.name,
-        email: payload.email,
-        picture: payload.picture,
-        credential: response.credential
-      }
-
-      // Store auth state in localStorage
-      localStorage.setItem('googleAuth', JSON.stringify(userProfile))
-      setIsAuthenticated(true)
-      router.push('/scene')
-    } catch (error) {
-      console.error('Error processing Google sign-in:', error)
-    }
-  }
+  }, [router, initializeGoogleSignIn, handleCredentialResponse])
 
   if (isLoading) {
     return (
@@ -170,4 +177,3 @@ export default function LoginPage() {
     </div>
   )
 }
-

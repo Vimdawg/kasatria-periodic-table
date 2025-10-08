@@ -309,7 +309,23 @@ export default function SceneClient({ data, error }: SceneClientProps) {
   }
 
   const handleLogout = () => {
+    // Clear authentication state
     localStorage.removeItem('googleAuth')
+    setIsAuthenticated(false)
+    setIsInitialized(false)
+    setIsLoading(true)
+    
+    // Clear any existing scene objects
+    if (objectsRef.current.length > 0) {
+      objectsRef.current.forEach(obj => {
+        if (sceneRef.current) {
+          sceneRef.current.remove(obj)
+        }
+      })
+      objectsRef.current = []
+    }
+    
+    // Navigate to login page
     router.push('/')
   }
 
