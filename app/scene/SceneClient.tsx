@@ -12,10 +12,11 @@ import {
   getSphereLayout, 
   getDoubleHelixLayout, 
   getGridLayout,
+  getTetrahedronLayout,
   LayoutTarget 
 } from '@/lib/layoutTargets'
 
-type LayoutType = 'table' | 'sphere' | 'helix' | 'grid'
+type LayoutType = 'table' | 'sphere' | 'helix' | 'grid' | 'tetrahedron'
 
 interface SceneClientProps {
   data: PersonData[]
@@ -303,6 +304,9 @@ export default function SceneClient({ data, error }: SceneClientProps) {
       case 'grid':
         targets = getGridLayout(data.length)
         break
+      case 'tetrahedron':
+        targets = getTetrahedronLayout(data.length)
+        break
     }
 
     transform(targets)
@@ -398,6 +402,12 @@ export default function SceneClient({ data, error }: SceneClientProps) {
           onClick={() => handleLayoutChange('grid')}
         >
           Grid
+        </button>
+        <button
+          className={currentLayout === 'tetrahedron' ? 'active' : ''}
+          onClick={() => handleLayoutChange('tetrahedron')}
+        >
+          Tetrahedron
         </button>
       </div>
 
